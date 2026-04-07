@@ -1,6 +1,5 @@
 import random
 import json
-import pyttsx3 as tts
 from bs4 import BeautifulSoup
 import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -63,12 +62,6 @@ def get_quote_data() -> list[dict]:
 quote_data = get_quote_data()
 all_tags = json.load(open(mood_to_tags_path))
 
-def tts_talk(text):
-    engine = tts.init()
-    engine.setProperty('rate', 250)
-    engine.say(text)
-    engine.runAndWait()
-    del engine
 
 def get_quote_from_mood(mood):
     tags_match_moods = all_tags[mood]
@@ -132,5 +125,3 @@ class MoodBot:
 
         return response
 
-    def speak(self, text):
-        tts_talk(text)
