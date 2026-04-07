@@ -1,0 +1,22 @@
+{
+    "happy": [
+        "Awesome",
+        "Excellent",
+        "I'm glad to hear that"
+    ],
+    "mad": [
+        "Breathe",
+        "Take a moment",
+        "Take it easy"
+    ],
+    "neutral": [
+        "Understood",
+        "Thanks for sharing",
+        "Got it"
+    ],
+    "sad": [
+        "I'm sorry",
+        "I feel for you",
+        "That's unfortunate"
+    ]
+}
