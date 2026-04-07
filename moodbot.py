@@ -11,12 +11,12 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-mood_to_tags_path = os.path.join(BASE_DIR, 'mood_to_tags.json')
-new_training_data_path = os.path.join(BASE_DIR, 'new_training_data.json')
-responses_path = os.path.join(BASE_DIR, 'motivational_responses.json')
-phrases_path = os.path.join(BASE_DIR, 'phrase_variations.json')
+mood_to_tags_path = os.path.join(BASE_DIR, 'botdata', 'mood_to_tags.json')
+new_training_data_path = os.path.join(BASE_DIR, 'botdata', 'new_training_data.json')
+responses_path = os.path.join(BASE_DIR, 'botdata', 'motivational_responses.json')
+phrases_path = os.path.join(BASE_DIR, 'botdata', 'phrase_variations.json')
 
-mood_key = {
+MOOD_KEY = {
     0: 'happy',
     1: 'mad',
     2: 'neutral',
@@ -81,14 +81,14 @@ def get_quote_from_mood(mood):
     return f"{quote['quote']} - {quote['author']}"
 
 class MoodBot:
-    def __init__(self, name, model_to_use='naive'):
+    def __init__(self, name):
         self.training_data = json.load(open(new_training_data_path))
         self.name = name
         self.responses = json.load(open(responses_path))
-        
+
         self.model = make_pipeline(
                     TfidfVectorizer(
-                        ngram_range=(2,3), 
+                        ngram_range=(1,2),  
                         stop_words='english'
                         ),
                     MultinomialNB()
@@ -118,9 +118,8 @@ class MoodBot:
         return prediction
 
     def get_response(self, mood):
-        mood_word = mood_key.get(mood)
+        mood_word = MOOD_KEY.get(mood)
         
-
         if 'question' in mood_word:
             motivational_response = random.choice(self.responses.get(mood_word.split()[0])).lower()
             return f"I believe you're asking a {mood_word}, {motivational_response}."
@@ -135,9 +134,3 @@ class MoodBot:
 
     def speak(self, text):
         tts_talk(text)
-
-
-
-Moody = MoodBot('Moody')
-
-
