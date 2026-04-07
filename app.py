@@ -19,7 +19,6 @@ with st.container(border=True, height=500):
         
         with st.chat_message('ai'):
             st.write(response)
-            mood_bot.speak(response)
     else:
         with st.chat_message('ai'):
             st.write("Hello there! The name's Moody.")
