@@ -7,8 +7,8 @@ def get_moodbot():
 
 mood_bot = get_moodbot()
 
-st.title('Your :blue[Motivational] Mood-Bot')
-st.subheader('Predicts mood, and responds accordingly.')
+st.title('Your :orange[Motivational] Mood-Bot')
+st.subheader('Predict :orange[mood]. Respond accordingly.')
 user_prompt = st.chat_input("Say something!")
 
 with st.container(border=True, height=500):
