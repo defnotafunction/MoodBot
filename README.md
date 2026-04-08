@@ -16,3 +16,6 @@ A chatbot that uses a trained model to predict your mood and web scraping to res
 
 ## License
 This project is not available for public use or distribution.
+
+#Additional Info
+View: <a href="https://moody-the-moodbot.streamlit.app/">Moody the Moodbot</a>
