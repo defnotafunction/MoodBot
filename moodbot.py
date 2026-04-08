@@ -26,6 +26,12 @@ MOOD_KEY = {
     7: 'sad question'
 }
 
+MOOD_COLORS = {
+    'happy': '#32CD32',
+    'mad': '#FF6347',
+    'sad': '#6495ED',
+    'neutral': "#8DA0B3"
+}
 
 
 def get_quote_data() -> list[dict]:
@@ -110,18 +116,24 @@ class MoodBot:
     
         return prediction
 
-    def get_response(self, mood):
+    def get_response(self, mood, html_form=True):
         mood_word = MOOD_KEY.get(mood)
         
         if 'question' in mood_word:
             motivational_response = random.choice(self.responses.get(mood_word.split()[0])).lower()
-            return f"I believe you're asking a {mood_word}, {motivational_response}."
+            if html_form:
+                return f"I believe you're asking a {mood_word}, {motivational_response}."
+            return f"<p>I believe you're asking a <span style='color:{MOOD_COLORS.get(mood_word)}'>{mood_word}</span>, {motivational_response}.</p>"
         
+
         phrase = random.choice(self.phrases.get(mood_word))
         motivational_response = random.choice(self.responses.get(mood_word)).lower()
         quote = get_quote_from_mood(mood_word)
         
-        response = f"{phrase}. I'm sensing that you're {mood_word}, {motivational_response}. \n{quote}"
-
+        if html_form:
+            response = f"<p>{phrase}. I'm sensing that you're <span style='color:{MOOD_COLORS.get(mood_word)}'>{mood_word}</span>, {motivational_response}. \n{quote}</p>"
+        else:
+            response = f"{phrase}. I'm sensing that you're {mood_word}, {motivational_response}. \n{quote}"
+        
         return response
 

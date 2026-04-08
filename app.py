@@ -1,5 +1,5 @@
 import streamlit as st
-from moodbot import MoodBot
+from moodbot import MoodBot, MOOD_KEY
 
 @st.cache_data
 def get_moodbot():
@@ -15,11 +15,12 @@ with st.container(border=True, height=500):
     
     if user_prompt:
         guessed_mood = mood_bot.guess_mood(user_prompt)
+        mood_color = MOOD_KEY.get(guessed_mood)
         response = mood_bot.get_response(guessed_mood)
         
         with st.chat_message('ai'):
-            st.write(response)
+            st.markdown(f"{response}", unsafe_allow_html=True)
     else:
         with st.chat_message('ai'):
-            st.write("Hello there! The name's Moody.")
+            st.write("Hello there! The name's :orange[Moody].")
         
