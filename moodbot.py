@@ -112,7 +112,7 @@ class MoodBot:
         prediction = self.model.predict([user_input])[0]
 
         if '?' in user_input:
-            return prediction + 4
+            return prediction + 4  # Mood questions are greater than their original moods by 4 in mood key
     
         return prediction
 
@@ -121,6 +121,7 @@ class MoodBot:
         
         if 'question' in mood_word:
             motivational_response = random.choice(self.responses.get(mood_word.split()[0])).lower()
+            
             if html_form:
                 return f"I believe you're asking a {mood_word}, {motivational_response}."
             return f"<p>I believe you're asking a <span style='color:{MOOD_COLORS.get(mood_word)}'>{mood_word}</span>, {motivational_response}.</p>"
