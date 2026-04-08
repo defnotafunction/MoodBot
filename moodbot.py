@@ -4,12 +4,17 @@ from bs4 import BeautifulSoup
 import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 import os
+import pandas as pd
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+goemotions_path = os.path.join(BASE_DIR, 'botdata', 'goemotions_1.csv')
+mood_to_goemotions_path = os.path.join(BASE_DIR, 'botdata', 'mood_to_goemotions.json')
 mood_to_tags_path = os.path.join(BASE_DIR, 'botdata', 'mood_to_tags.json')
 new_training_data_path = os.path.join(BASE_DIR, 'botdata', 'new_training_data.json')
 responses_path = os.path.join(BASE_DIR, 'botdata', 'motivational_responses.json')
@@ -32,6 +37,19 @@ MOOD_COLORS = {
     'sad': '#6495ED',
     'neutral': "#8DA0B3"
 }
+
+def create_overall_mood_column(row):
+    mood_to_goemotions = json.load(open(mood_to_goemotions_path))
+    if any(row[col] == 1 for col in mood_to_goemotions['happy']):
+        return 0
+    if any(row[col] == 1 for col in mood_to_goemotions['mad']):
+        return 1
+    if any(row[col] == 1 for col in mood_to_goemotions['neutral']):
+        return 2
+    return 3
+
+emotions = pd.read_csv(goemotions_path)
+emotions['overall_mood'] = emotions.apply(create_overall_mood_column, axis=1)
 
 
 def get_quote_data() -> list[dict]:
@@ -80,7 +98,7 @@ def get_quote_from_mood(mood):
     return f"{quote['quote']} - {quote['author']}"
 
 class MoodBot:
-    def __init__(self, name):
+    def __init__(self, name, dataset_to_use='original'):
         self.training_data = json.load(open(new_training_data_path))
         self.name = name
         self.responses = json.load(open(responses_path))
@@ -90,8 +108,9 @@ class MoodBot:
                         ngram_range=(1,2),  
                         stop_words='english'
                         ),
-                    MultinomialNB()
-        )
+                    LogisticRegression(class_weight='balanced')
+        ) 
+        self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
         self.phrases = json.load(open(phrases_path))
 
@@ -101,11 +120,19 @@ class MoodBot:
     def get_dataset(self):
         samples = []
         labels = []
-        
-        for sentence, label in self.training_data.items():
-            samples.append(sentence)
-            labels.append(label)
-        
+
+        if 'reddit' in self.dataset_to_use.lower():
+            for row in emotions.itertuples():
+                sentence = row.text
+                label = row.overall_mood
+                samples.append(sentence)
+                labels.append(label)
+                
+        elif 'original' in self.dataset_to_use.lower():
+            for sentence, label in self.training_data.items():
+                samples.append(sentence)
+                labels.append(label)
+            
         return samples, labels
     
     def guess_mood(self, user_input):

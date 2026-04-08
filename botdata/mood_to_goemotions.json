@@ -1,0 +1,38 @@
+{
+    "happy": [
+        "admiration",
+        "amusement",
+        "caring",
+        "desire",
+        "excitement",
+        "gratitude",
+        "joy",
+        "love"
+    ],
+    "sad": [
+        "disappointment",
+        "grief",
+        "remorse",
+        "sadness",
+        "embarrassment",
+        "fear"
+    ],
+    "mad": [
+        "anger",
+        "annoyance",
+        "disapproval",
+        "disgust"
+    ],
+    "neutral": [
+        "neutral",
+        "confusion",
+        "curiosity",
+        "realization",
+        "surprise",
+        "nervousness",
+        "approval",
+        "optimism",
+        "pride",
+        "relief"
+    ]
+}
