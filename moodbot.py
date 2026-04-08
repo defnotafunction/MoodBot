@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import f1_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
@@ -105,18 +106,18 @@ class MoodBot:
 
         self.model = make_pipeline(
                     TfidfVectorizer(
-                        ngram_range=(1,2),  
+                        ngram_range=(1,3),  
                         stop_words='english'
                         ),
-                    LogisticRegression(class_weight='balanced')
+                    LogisticRegression(class_weight='balanced') if 'reddit' in dataset_to_use else MultinomialNB()
         ) 
         self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
         self.phrases = json.load(open(phrases_path))
-
-        #training_data, testing_data, training_labels, testing_labels = train_test_split(self.dataset[0], self.dataset[1], random_state=1, test_size=.3)
-        self.model.fit(self.dataset[0], self.dataset[1])
-
+        self.threshold = 0.3  # If prediction prob under threshold, return neutral mood
+        training_data, testing_data, training_labels, testing_labels = train_test_split(self.dataset[0], self.dataset[1], random_state=1, test_size=.3)
+        self.model.fit(training_data, training_labels)
+        
     def get_dataset(self):
         samples = []
         labels = []
@@ -136,6 +137,10 @@ class MoodBot:
         return samples, labels
     
     def guess_mood(self, user_input):
+        predictions = self.model.predict_proba([user_input])[0]
+        if max(predictions) < self.threshold:
+            return 2
+        
         prediction = self.model.predict([user_input])[0]
 
         if '?' in user_input:
