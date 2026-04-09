@@ -109,7 +109,7 @@ class MoodBot:
                         ngram_range=(1,3),  
                         stop_words='english'
                         ),
-                    LogisticRegression(class_weight='balanced') if 'reddit' in dataset_to_use else MultinomialNB()
+                    LogisticRegression(class_weight='balanced') if 'reddit' in dataset_to_use.lower() else MultinomialNB()
         ) 
         self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
