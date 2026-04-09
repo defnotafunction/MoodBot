@@ -114,9 +114,7 @@ class MoodBot:
         self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
         self.phrases = json.load(open(phrases_path))
-        self.threshold = 0.3  # If prediction prob under threshold, return neutral mood
-        training_data, testing_data, training_labels, testing_labels = train_test_split(self.dataset[0], self.dataset[1], random_state=1, test_size=.3)
-        self.model.fit(training_data, training_labels)
+        self.model.fit(self.dataset[0], self.dataset[1])
         
     def get_dataset(self):
         samples = []
@@ -137,10 +135,6 @@ class MoodBot:
         return samples, labels
     
     def guess_mood(self, user_input):
-        predictions = self.model.predict_proba([user_input])[0]
-        if max(predictions) < self.threshold:
-            return 2
-        
         prediction = self.model.predict([user_input])[0]
 
         if '?' in user_input:
