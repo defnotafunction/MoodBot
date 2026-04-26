@@ -15,8 +15,8 @@ st.title('Your :orange[Motivational] Mood-Bot')
 st.subheader('Predict :orange[mood]. Respond accordingly.')
 dataset_to_use = st.selectbox(
     'Datasets',
-    ('Original + Naive Bayes (approx. 1700 sentences)',
-    'Reddit + LogisticRegression (approx. 70000 sentences)',
+    ('Original + Naive Bayes (approx. 1,700 sentences)',
+    'Reddit + LogisticRegression (approx. 210,000 sentences)',
     'Reddit + ANN'
      )
 )

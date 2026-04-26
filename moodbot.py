@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
@@ -13,11 +13,16 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sentence_transformers import SentenceTransformer
+
+
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-goemotions_path = os.path.join(BASE_DIR, 'botdata', 'goemotions_1.csv')
+goemotions1_path = os.path.join(BASE_DIR, 'botdata', 'goemotions_1.csv')
+goemotions2_path = os.path.join(BASE_DIR, 'botdata', 'goemotions_2.csv')
+goemotions3_path = os.path.join(BASE_DIR, 'botdata', 'goemotions_3.csv')
 mood_to_goemotions_path = os.path.join(BASE_DIR, 'botdata', 'mood_to_goemotions.json')
 mood_to_tags_path = os.path.join(BASE_DIR, 'botdata', 'mood_to_tags.json')
 new_training_data_path = os.path.join(BASE_DIR, 'botdata', 'new_training_data.json')
@@ -52,7 +57,11 @@ def create_overall_mood_column(row):
         return 2
     return 3
 
-emotions = pd.read_csv(goemotions_path)
+emotionsdf1, emotionsdf2, emotionsdf3 = pd.read_csv(goemotions1_path), pd.read_csv(goemotions2_path), pd.read_csv(goemotions3_path)
+
+emotions = pd.concat([emotionsdf1, emotionsdf2, emotionsdf3], ignore_index=True)
+
+
 emotions['overall_mood'] = emotions.apply(create_overall_mood_column, axis=1)
 
 
@@ -178,32 +187,25 @@ class MoodANN:
         self.responses = json.load(open(responses_path))
         self.phrases = json.load(open(phrases_path))
 
-        self.vectorizer = TfidfVectorizer(
-                        ngram_range=(1,3),  
-                        stop_words='english',
-                        max_features=10000
-                        )
+        self.encoder = SentenceTransformer('all-MiniLM-L6-v2')
         
         self.dataset = self.get_dataset()
         
     
         X_train, X_test, y_train, y_test = train_test_split(self.dataset[0], self.dataset[1], test_size=0.3, random_state=1)
 
-        self.vectorizer.fit_transform(self.dataset[0], self.dataset[1])
-        input_dim = len(self.vectorizer.get_feature_names_out())
+        self.X_train = self.encoder.encode(X_train, convert_to_tensor=False)
+        self.X_test  = self.encoder.encode(X_test, convert_to_tensor=False)
 
+        self.X_train = torch.tensor(self.X_train)
+        self.X_test = torch.tensor(self.X_test)
 
-        X_train = self.vectorizer.transform(X_train)
-        X_test  = self.vectorizer.transform(X_test)
-
-        self.X_train = torch.tensor(X_train.toarray(), dtype=torch.float32)
-        self.X_test  = torch.tensor(X_test.toarray(), dtype=torch.float32)
 
         self.y_train = torch.tensor(y_train, dtype=torch.long)
         self.y_test  = torch.tensor(y_test, dtype=torch.long)
 
         self.model = nn.Sequential(
-            nn.Linear(input_dim, 128),
+            nn.Linear(384, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -213,8 +215,15 @@ class MoodANN:
         )
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
-        #self.train_model()
+        
         self.model.load_state_dict(torch.load("models/mood_ann.pth"))
+        
+        # Testing and Metrics
+        self.model.eval()
+        predictions = [self.guess_mood(x) for x in X_test]
+        print(f'Accuracy: {accuracy_score(y_test, predictions)}')
+        print(f'F1 Score: {f1_score(y_test, predictions, average='weighted')}')
+
 
     def get_dataset(self):
         samples = []
@@ -249,8 +258,7 @@ class MoodANN:
     def guess_mood(self, text):
         # Evaluation Mode.
         self.model.eval()
-        x = self.vectorizer.transform([text])
-        x = torch.tensor(x.toarray(), dtype=torch.float32)
+        x = self.encoder.encode([text], convert_to_tensor=True)
         
         with torch.no_grad():
             outputs = self.model(x)
@@ -281,6 +289,3 @@ class MoodANN:
         return response
         
 
-    
-
-md = MoodANN()
