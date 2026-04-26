@@ -219,10 +219,10 @@ class MoodANN:
         self.model.load_state_dict(torch.load("models/mood_ann.pth"))
         
         # Testing and Metrics
-        self.model.eval()
-        predictions = [self.guess_mood(x) for x in X_test]
-        print(f'Accuracy: {accuracy_score(y_test, predictions)}')
-        print(f'F1 Score: {f1_score(y_test, predictions, average='weighted')}')
+        #self.model.eval()
+        #predictions = [self.guess_mood(x) for x in X_test]
+        #print(f'Accuracy: {accuracy_score(y_test, predictions)}')
+        #print(f'F1 Score: {f1_score(y_test, predictions, average='weighted')}')
 
 
     def get_dataset(self):
