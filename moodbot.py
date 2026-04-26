@@ -119,7 +119,6 @@ class MoodBot:
         ) 
         self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
-        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(self.dataset[0], self.dataset[1], test_size=0.3, random_state=1)
         self.phrases = json.load(open(phrases_path))
         self.model.fit(self.dataset[0], self.dataset[1])
         
@@ -173,20 +172,35 @@ class MoodBot:
 
 torch.manual_seed(1)
 
-class MoodANN(MoodBot):
+class MoodANN:
     def __init__(self):
-        super().__init__('Moody', 'reddit')
-        self.vectorizer = self.model.named_steps["tfidf"]
+        self.training_data = json.load(open(new_training_data_path))
+        self.responses = json.load(open(responses_path))
+        self.phrases = json.load(open(phrases_path))
+
+        self.vectorizer = TfidfVectorizer(
+                        ngram_range=(1,3),  
+                        stop_words='english',
+                        max_features=10000
+                        )
+        
+        self.dataset = self.get_dataset()
+        
+    
+        X_train, X_test, y_train, y_test = train_test_split(self.dataset[0], self.dataset[1], test_size=0.3, random_state=1)
+
+        self.vectorizer.fit_transform(self.dataset[0], self.dataset[1])
         input_dim = len(self.vectorizer.get_feature_names_out())
 
-        X_train = self.model.named_steps["tfidf"].transform(self.train_x)
-        X_test  = self.model.named_steps["tfidf"].transform(self.test_x)
+
+        X_train = self.vectorizer.transform(X_train)
+        X_test  = self.vectorizer.transform(X_test)
 
         self.X_train = torch.tensor(X_train.toarray(), dtype=torch.float32)
         self.X_test  = torch.tensor(X_test.toarray(), dtype=torch.float32)
 
-        self.y_train = torch.tensor(self.train_y, dtype=torch.long)
-        self.y_test  = torch.tensor(self.test_y, dtype=torch.long)
+        self.y_train = torch.tensor(y_train, dtype=torch.long)
+        self.y_test  = torch.tensor(y_test, dtype=torch.long)
 
         self.model = nn.Sequential(
             nn.Linear(input_dim, 128),
@@ -199,7 +213,20 @@ class MoodANN(MoodBot):
         )
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        #self.train_model()
         self.model.load_state_dict(torch.load("models/mood_ann.pth"))
+
+    def get_dataset(self):
+        samples = []
+        labels = []
+
+        for row in emotions.itertuples():
+            sentence = row.text
+            label = row.overall_mood
+            samples.append(sentence)
+            labels.append(label)
+        
+        return samples, labels
 
     def train_model(self):
         num_epochs = 1000
@@ -232,7 +259,26 @@ class MoodANN(MoodBot):
         return pred
 
     def get_response(self, mood, html_form=True):  
-        return super().get_response(mood, html_form)
+        mood_word = MOOD_KEY.get(mood)
+        
+        if 'question' in mood_word:
+            motivational_response = random.choice(self.responses.get(mood_word.split()[0])).lower()
+            
+            if html_form:
+                return f"I believe you're asking a {mood_word}, {motivational_response}."
+            return f"<p>I believe you're asking a <span style='color:{MOOD_COLORS.get(mood_word)}'>{mood_word}</span>, {motivational_response}.</p>"
+        
+
+        phrase = random.choice(self.phrases.get(mood_word))
+        motivational_response = random.choice(self.responses.get(mood_word)).lower()
+        quote = get_quote_from_mood(mood_word)
+        
+        if html_form:
+            response = f"<p>{phrase}. I'm sensing that you're <span style='color:{MOOD_COLORS.get(mood_word)}'>{mood_word}</span>, {motivational_response}. \n{quote}</p>"
+        else:
+            response = f"{phrase}. I'm sensing that you're {mood_word}, {motivational_response}. \n{quote}"
+        
+        return response
         
 
     
