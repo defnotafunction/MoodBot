@@ -6,10 +6,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import f1_score
 from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 import os
 import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -104,15 +107,19 @@ class MoodBot:
         self.name = name
         self.responses = json.load(open(responses_path))
 
-        self.model = make_pipeline(
-                    TfidfVectorizer(
+        self.model = Pipeline([
+                    ("tfidf", TfidfVectorizer(
                         ngram_range=(1,3),  
-                        stop_words='english'
-                        ),
-                    LogisticRegression(class_weight='balanced') if 'reddit' in dataset_to_use.lower() else MultinomialNB()
+                        stop_words='english',
+                        max_features=5000
+                        )),
+                    ("lgstic", LogisticRegression(class_weight='balanced') if 'reddit' in dataset_to_use.lower() else MultinomialNB()
+                    )
+            ]
         ) 
         self.dataset_to_use = dataset_to_use
         self.dataset = self.get_dataset()
+        self.train_x, self.test_x, self.train_y, self.test_y = train_test_split(self.dataset[0], self.dataset[1], test_size=0.3, random_state=1)
         self.phrases = json.load(open(phrases_path))
         self.model.fit(self.dataset[0], self.dataset[1])
         
@@ -164,3 +171,70 @@ class MoodBot:
         
         return response
 
+torch.manual_seed(1)
+
+class MoodANN(MoodBot):
+    def __init__(self):
+        super().__init__('Moody', 'reddit')
+        self.vectorizer = self.model.named_steps["tfidf"]
+        input_dim = len(self.vectorizer.get_feature_names_out())
+
+        X_train = self.model.named_steps["tfidf"].transform(self.train_x)
+        X_test  = self.model.named_steps["tfidf"].transform(self.test_x)
+
+        self.X_train = torch.tensor(X_train.toarray(), dtype=torch.float32)
+        self.X_test  = torch.tensor(X_test.toarray(), dtype=torch.float32)
+
+        self.y_train = torch.tensor(self.train_y, dtype=torch.long)
+        self.y_test  = torch.tensor(self.test_y, dtype=torch.long)
+
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 4)
+        )
+        self.criterion = nn.CrossEntropyLoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.001)
+        self.model.load_state_dict(torch.load("models/mood_ann.pth"))
+
+    def train_model(self):
+        num_epochs = 1000
+        self.model.train()
+
+        for i in range(num_epochs):
+            predictions = self.model(self.X_train)
+            loss = self.criterion(predictions, self.y_train)
+
+            loss.backward()
+            # Update weights
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+
+            if i % 100 == 0:
+                print(f'Epoch {i}: Loss - {loss.item()}')
+
+        torch.save(self.model.state_dict(), 'models/mood_ann.pth')
+
+    def guess_mood(self, text):
+        # Evaluation Mode.
+        self.model.eval()
+        x = self.vectorizer.transform([text])
+        x = torch.tensor(x.toarray(), dtype=torch.float32)
+        
+        with torch.no_grad():
+            outputs = self.model(x)
+            pred = torch.argmax(outputs, dim=1).item()
+
+        return pred
+
+    def get_response(self, mood, html_form=True):  
+        return super().get_response(mood, html_form)
+        
+
+    
+
+md = MoodANN()

@@ -1,15 +1,16 @@
 # MoodBot
-A chatbot that uses a trained model to predict your mood and web scraping to respond with quotes.
+A chatbot that uses a trained model and neural network to predict your mood and web scraping to respond with quotes.
 
 ## Main Features
 - App - Built with `streamlit` for an interactive chat interface
 - Quotes - MoodBot's responses consist of a scraped quote that correlates to your mood.
-- Guessing - MoodBot guesses your mood by using a Logistic Regression model or a Naive Bayes Classifier, which is trained on preset datasets of your liking, from `scikit-learn`.
+- Guessing - MoodBot guesses your mood by using a variety of models, which are trained on preset datasets of your liking, from `scikit-learn` and PyTorch.
 
 ## Technologies Used
 - **Python 3.11+**
 - **Streamlit**
 - **Scikit-learn**
+- **PyTorch**
 - **Requests**
 - **BeautifulSoup**
 - **JSON**

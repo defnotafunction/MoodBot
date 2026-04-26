@@ -1,21 +1,30 @@
 import streamlit as st
-from moodbot import MoodBot
+from moodbot import MoodBot, MoodANN
 import time
 
 @st.cache_resource
 def get_moodbot(dataset_to_use, key):
     return MoodBot('Moody', dataset_to_use=dataset_to_use)
 
+@st.cache_resource
+def get_mood_ann():
+    return MoodANN()
 
 
 st.title('Your :orange[Motivational] Mood-Bot')
 st.subheader('Predict :orange[mood]. Respond accordingly.')
 dataset_to_use = st.selectbox(
     'Datasets',
-    ('Original + Naive Bayes (approx. 1700 sentences)', 'Reddit + LogisticRegression (approx. 70000 sentences)')
+    ('Original + Naive Bayes (approx. 1700 sentences)',
+    'Reddit + LogisticRegression (approx. 70000 sentences)',
+    'Reddit + ANN'
+     )
 )
 
-mood_bot = get_moodbot(dataset_to_use, key=dataset_to_use)
+if 'ANN' in dataset_to_use:
+    mood_bot = get_mood_ann()
+else:
+    mood_bot = get_moodbot(dataset_to_use, key=dataset_to_use)
 
 user_prompt = st.chat_input("Say something!")
 
